@@ -29,3 +29,15 @@ FISHSLiM encryption for ZNC with support for CBC and ECB modes, and key exchange
 - **SetKey <target> <key>** Set a new key for a target
 - **DelKey <target>** Delete a key for a target
 - **KeyX <target>** Initiate key exchange using DH1080 with a target
+
+## TheLounge integration
+
+Install the plugin https://www.npmjs.com/package/thelounge-plugin-shortcuts 
+and then execute the following commands
+
+```
+/shortcut add listkeys /msg *fishslim listkeys
+/shortcut add setkey /msg *fishslim setkey {currentChannel} {0}
+/shortcut add delkey /msg *fishslim delkey {currentChannel}
+/shortcut add keyx /msg *fishslim keyx {currentChannel}
+```
