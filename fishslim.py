@@ -294,7 +294,7 @@ class FiSHSLiM:
             return None
 
     @staticmethod
-    def ecb_decrypt(encrypted_data: str, key: bytes) -> str | None:
+    def ecb_decrypt(encrypted_data: str, key: bytes, ignore_decode_errors: bool = False) -> str | None:
         if len(encrypted_data) < 12:
             return None
 
@@ -304,7 +304,7 @@ class FiSHSLiM:
                 return None
 
             message = FiSHSLiM.BlowfishECB.decrypt(key, raw)
-            return message.strip(b'\x00').decode('utf-8', errors='replace')
+            return message.strip(b'\x00').decode('utf-8', errors='replace' if ignore_decode_errors else 'strict')
         except (TypeError, ValueError, UnicodeDecodeError):
             return None
 
@@ -322,7 +322,7 @@ class FiSHSLiM:
         return f'+OK *{encrypted_msg}'
 
     @staticmethod
-    def cbc_decrypt(encrypted_data: str, key: bytes) -> str | None:
+    def cbc_decrypt(encrypted_data: str, key: bytes, ignore_decode_errors: bool = False) -> str | None:
         if len(encrypted_data) % 4:
             encrypted_data += '=' * (4 - len(encrypted_data) % 4)
 
@@ -336,7 +336,7 @@ class FiSHSLiM:
         message = FiSHSLiM.BlowfishCBC.decrypt(key, FiSHSLiM.zero_pad(raw, 8), iv)
 
         try:
-            return message.strip(b'\x00').decode('utf-8', errors='replace')
+            return message.strip(b'\x00').decode('utf-8', errors='replace' if ignore_decode_errors else 'strict')
         except UnicodeDecodeError:
             return None
 
@@ -678,6 +678,8 @@ if into_znc:
             mode, key = FiSHSLiM.parse_key(key_data)
             real_mode = mode
 
+            # try to decrypt message first in signed mode, if fail use the other mode
+            # get noticed that in this first try, the decode of message is utf-8-strict
             try:
                 if mode == 'ecb':
                     message = FiSHSLiM.ecb_decrypt(encrypted_data, key)
@@ -693,6 +695,14 @@ if into_znc:
                         message = FiSHSLiM.ecb_decrypt(encrypted_data, key)
                         real_mode = 'ecb'
 
+                # If both ECB and CBC failed then decrypt in assigned mode ignoring errors
+                if not message:
+                    if mode == 'ecb':
+                        message = FiSHSLiM.ecb_decrypt(encrypted_data, key, ignore_decode_errors=True)
+                    elif mode == 'cbc':
+                        message = FiSHSLiM.cbc_decrypt(encrypted_data, key, ignore_decode_errors=True)
+
+                # if message is empty after at all, raise error
                 if not message:
                     raise Exception('empty plaintext')
 
