@@ -304,7 +304,7 @@ class FiSHSLiM:
                 return None
 
             message = FiSHSLiM.BlowfishECB.decrypt(key, raw)
-            return message.strip(b'\x00').decode('utf-8')
+            return message.strip(b'\x00').decode('utf-8', errors='replace')
         except (TypeError, ValueError, UnicodeDecodeError):
             return None
 
@@ -336,7 +336,7 @@ class FiSHSLiM:
         message = FiSHSLiM.BlowfishCBC.decrypt(key, FiSHSLiM.zero_pad(raw, 8), iv)
 
         try:
-            return message.strip(b'\x00').decode('utf-8')
+            return message.strip(b'\x00').decode('utf-8', errors='replace')
         except UnicodeDecodeError:
             return None
 
